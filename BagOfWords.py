@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #  Author: Angela Chapman
 #  Date: 8/6/2014
 #
@@ -10,25 +8,32 @@
 # *************************************** #
 
 import os
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.ensemble import RandomForestClassifier
+
+from pip._vendor.distlib.compat import raw_input
+from pip._vendor.requests.packages.urllib3.connectionpool import xrange
+
 from KaggleWord2VecUtility import KaggleWord2VecUtility
 import pandas as pd
-import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_extraction.text import CountVectorizer
+
+#import nltk
+
 
 if __name__ == '__main__':
+    
     train = pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 'labeledTrainData.tsv'), header=0, \
-                    delimiter="\t", quoting=3)
+                    delimiter="\t", quoting=4)
     test = pd.read_csv(os.path.join(os.path.dirname(__file__), 'data', 'testData.tsv'), header=0, delimiter="\t", \
-                   quoting=3 )
+                   quoting=4 )
 
-    print 'The first review is:'
-    print train["review"][0]
-
+    print("Train: " + str(len(train["id"])))
+    print("Test: " + str(len(test["id"])))
+    
     raw_input("Press Enter to continue...")
 
 
-    print 'Download text data sets. If you already have NLTK datasets downloaded, just close the Python download window...'
+    #print('Download text data sets. If you already have NLTK datasets downloaded, just close the Python download window...')
     #nltk.download()  # Download text data sets, including stop words
 
     # Initialize an empty list to hold the clean reviews
@@ -37,14 +42,14 @@ if __name__ == '__main__':
     # Loop over each review; create an index i that goes from 0 to the length
     # of the movie review list
 
-    print "Cleaning and parsing the training set movie reviews...\n"
+    print("Cleaning and parsing the training set movie reviews...\n")
     for i in xrange( 0, len(train["review"])):
         clean_train_reviews.append(" ".join(KaggleWord2VecUtility.review_to_wordlist(train["review"][i], True)))
 
 
     # ****** Create a bag of words from the training set
     #
-    print "Creating the bag of words...\n"
+    print("Creating the bag of words...\n")
 
 
     # Initialize the "CountVectorizer" object, which is scikit-learn's
@@ -67,7 +72,7 @@ if __name__ == '__main__':
 
     # ******* Train a random forest using the bag of words
     #
-    print "Training the random forest (this may take a while)..."
+    print("Training the random forest (this may take a while)...")
 
 
     # Initialize a Random Forest classifier with 100 trees
@@ -84,7 +89,7 @@ if __name__ == '__main__':
     # Create an empty list and append the clean reviews one by one
     clean_test_reviews = []
 
-    print "Cleaning and parsing the test set movie reviews...\n"
+    print("Cleaning and parsing the test set movie reviews...\n")
     for i in xrange(0,len(test["review"])):
         clean_test_reviews.append(" ".join(KaggleWord2VecUtility.review_to_wordlist(test["review"][i], True)))
 
@@ -93,15 +98,34 @@ if __name__ == '__main__':
     test_data_features = test_data_features.toarray()
 
     # Use the random forest to make sentiment label predictions
-    print "Predicting test labels...\n"
+    print("Predicting test labels...\n")
     result = forest.predict(test_data_features)
 
     # Copy the results to a pandas dataframe with an "id" column and
     # a "sentiment" column
-    output = pd.DataFrame( data={"id":test["id"], "sentiment":result} )
+    output = pd.DataFrame( data={"id":test["id"], "sentiment":result, "gold_label":test['gold_label']} )
+    
+    fw = open('gold_files/gold.txt', 'w')
+    
+    for i in range(len(test["id"])):
+        label = ""
+        label_predicted = "";
+        if result[i] == 1:
+            label_predicted = "Positivo"
+        else:
+            label_predicted = "Negativo"
+        if test['gold_label'][i] == 1:
+            label = "Positivo"
+        else:
+            label = "Negativo"
+        if result[i] == test['gold_label'][i]:
+            fw.write(label + '\t' + label_predicted + '\t' + '1' + '\t' + test["id"][i] + '\n')
+        else:
+            fw.write(label + '\t' + label_predicted + '\t' + '0' + '\t' + test["id"][i] + '\n')
+        
 
     # Use pandas to write the comma-separated output file
     output.to_csv(os.path.join(os.path.dirname(__file__), 'data', 'Bag_of_Words_model.csv'), index=False, quoting=3)
-    print "Wrote results to Bag_of_Words_model.csv"
+    print("Wrote results to Bag_of_Words_model.csv")
 
 

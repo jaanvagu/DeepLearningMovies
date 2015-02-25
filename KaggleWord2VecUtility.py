@@ -1,10 +1,5 @@
-#!/usr/bin/env python
 
 import re
-import nltk
-
-import pandas as pd
-import numpy as np
 
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
@@ -29,7 +24,7 @@ class KaggleWord2VecUtility(object):
         #
         # 4. Optionally remove stop words (false by default)
         if remove_stopwords:
-            stops = set(stopwords.words("english"))
+            stops = set(stopwords.words("spanish"))
             words = [w for w in words if not w in stops]
         #
         # 5. Return a list of words
